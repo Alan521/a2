@@ -12,8 +12,14 @@ Haiqing Gong
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <signal.h>
  
 #define MAXRCVLEN 4096
+
+void* UIThread(void* arg);
+int serverState = 1;
  
 int main(int argc, char *argv[])
 {
@@ -24,6 +30,7 @@ int main(int argc, char *argv[])
 	}
 	int port = atoi(argv[1]);
 	int len;
+	pthread_t uTid;
 	char buffer[MAXRCVLEN + 1]; // +1 so we can add null terminator
   
 	struct sockaddr_in dest; // socket info about the machine connecting to us
@@ -54,6 +61,7 @@ int main(int argc, char *argv[])
 	listen(mysocket, 1);
 	
 	// Create a socket to communicate with the client that just connected
+	pthread_create(&uTid, NULL, UIThread, NULL);
 	int consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
 
 	int filesuffix = 0;
@@ -105,4 +113,20 @@ int main(int argc, char *argv[])
 
 	close(mysocket);
 	return EXIT_SUCCESS;
+}
+
+void* UIThread(void* arg){
+	char state = '0';
+	system("/bin/stty raw");
+	while(serverState){
+		state = getchar();
+		if(state == 'o'){
+			serverState = 0;
+		}else if(state == 's'){
+			serverState = 1;
+		}
+	}
+	system ("/bin/stty cooked");
+	kill(getpid(), SIGTERM);
+	return NULL;
 }

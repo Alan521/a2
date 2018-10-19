@@ -18,9 +18,15 @@ Haiqing Gong
  
 #define MAXRCVLEN 4096
 
+typedef struct
+{
+	int consocket;
+	int messageID;
+}threadArgs;
+
 void* UIThread(void* arg);
 int serverState = 1;
-int recieveConnection(int consocket);
+void* recieveConnection(void* arg);
 
 int main(int argc, char *argv[])
 {
@@ -31,8 +37,8 @@ int main(int argc, char *argv[])
 	}
 	int port = atoi(argv[1]);
 	
-	pthread_t uTid;
-	
+	pthread_t uTid;//user interface thread id
+	pthread_t * cTid = NULL;//un initialized list of thread ids for client connections
   
 	struct sockaddr_in dest; // socket info about the machine connecting to us
 	struct sockaddr_in serv; // socket info about our server
@@ -63,16 +69,28 @@ int main(int argc, char *argv[])
 	
 	// Create a socket to communicate with the client that just connected
 	pthread_create(&uTid, NULL, UIThread, NULL);
+	//hands off stdinput to thread
 	int consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
-
-	while (consocket)
+	int numServiced = 1;
+	threadArgs* tArgs = NULL;
+	while (serverState)
 	{
-		recieveConnection(consocket);
-		// Continue listening for incoming connections
-		consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
-		printf("Incoming connection from %s \n", inet_ntoa(dest.sin_addr));
+		//checks if it has stopped all connections
+		if(serverState != 2){
+			printf("Incoming connection from %s \n", inet_ntoa(dest.sin_addr));	
+			cTid = (pthread_t*)realloc(cTid, sizeof(pthread_t)*(numServiced + 1));
+			tArgs = (threadArgs*)realloc(tArgs, sizeof(threadArgs)*(numServiced + 1));
+			tArgs[numServiced - 1].consocket = consocket;
+			tArgs[numServiced - 1].messageID = numServiced;
+			pthread_create(&cTid[numServiced], NULL, recieveConnection, &tArgs[numServiced - 1]);
+			numServiced = numServiced + 1;
+			// Continue listening for incoming connections
+			consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
+		}	
 	}
 
+	free(cTid);
+	free(tArgs);
 	close(mysocket);
 	return EXIT_SUCCESS;
 }
@@ -83,17 +101,25 @@ void* UIThread(void* arg){
 	while(serverState){
 		state = getchar();
 		if(state == 'o'){
+			//kill all
+			printf("killing all\n");
 			serverState = 0;
 		}else if(state == 's'){
+			printf("server stopping incoming connections\n");
+			serverState = 2;;
+		}else if(state == 'c'){
+			printf("resuming connections\n");
 			serverState = 1;
-		}
+		}	
 	}
 	system ("/bin/stty cooked");
 	kill(getpid(), SIGTERM);
 	return NULL;
 }
 
-int recieveConnection(int consocket){
+void* recieveConnection(void* arg){
+	threadArgs* args = (threadArgs*)arg;
+	int consocket =  args->consocket;
 	int len = 0;
 	char buffer[MAXRCVLEN + 1]; // +1 so we can add null terminator
 	int filesuffix = 0;
@@ -134,5 +160,5 @@ int recieveConnection(int consocket){
 
 	// Close current connection
 	close(consocket);
-	return 0;
+	return NULL;
 }

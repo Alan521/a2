@@ -20,7 +20,8 @@ Haiqing Gong
 
 void* UIThread(void* arg);
 int serverState = 1;
- 
+int recieveConnection(int consocket);
+
 int main(int argc, char *argv[])
 {
 	if (argc != 2)
@@ -29,9 +30,9 @@ int main(int argc, char *argv[])
 		return EXIT_SUCCESS;
 	}
 	int port = atoi(argv[1]);
-	int len;
+	
 	pthread_t uTid;
-	char buffer[MAXRCVLEN + 1]; // +1 so we can add null terminator
+	
   
 	struct sockaddr_in dest; // socket info about the machine connecting to us
 	struct sockaddr_in serv; // socket info about our server
@@ -64,51 +65,12 @@ int main(int argc, char *argv[])
 	pthread_create(&uTid, NULL, UIThread, NULL);
 	int consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
 
-	int filesuffix = 0;
 	while (consocket)
 	{
-		printf("Incoming connection from %s \n", inet_ntoa(dest.sin_addr));
-		
-		// Receive data from the client
-		len = recv(consocket, buffer, MAXRCVLEN, 0);
-		if (len == -1)
-		{
-			perror("Error in recv");
-		}
-		buffer[len] = '\0';
-		printf("Receive %d bytes from client\n", len);
-		
-		// Create a file to write
-		char filename[30];
-		sprintf(filename, "data.%d", filesuffix++);
-		FILE *file = fopen(filename, "w");
-
-		// Receive data from client, then write to file.
-		while (len)
-		{
-			fwrite(buffer, 1, len, file);
-			len = recv(consocket, buffer, MAXRCVLEN, 0);
-			if (len == -1)
-			{
-				perror("Error in recv");
-			}
-			buffer[len] = '\0';
-			if (len != 0)
-			{
-				printf("Receive %d bytes from client\n", len);
-			}
-		}
-		
-		printf("Receive successful.\n");
-
-		// Close file
-		fclose(file);
-
-		// Close current connection
-		close(consocket);
-		
+		recieveConnection(consocket);
 		// Continue listening for incoming connections
 		consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
+		printf("Incoming connection from %s \n", inet_ntoa(dest.sin_addr));
 	}
 
 	close(mysocket);
@@ -129,4 +91,48 @@ void* UIThread(void* arg){
 	system ("/bin/stty cooked");
 	kill(getpid(), SIGTERM);
 	return NULL;
+}
+
+int recieveConnection(int consocket){
+	int len = 0;
+	char buffer[MAXRCVLEN + 1]; // +1 so we can add null terminator
+	int filesuffix = 0;
+	// Receive data from the client
+	len = recv(consocket, buffer, MAXRCVLEN, 0);
+	if (len == -1)
+	{
+		perror("Error in recv");
+	}
+	buffer[len] = '\0';
+	printf("Receive %d bytes from client\n", len);
+	
+	// Create a file to write
+	char filename[30];
+	sprintf(filename, "data.%d", filesuffix++);
+	FILE *file = fopen(filename, "w");
+
+	// Receive data from client, then write to file.
+	while (len)
+	{
+		fwrite(buffer, 1, len, file);
+		len = recv(consocket, buffer, MAXRCVLEN, 0);
+		if (len == -1)
+		{
+			perror("Error in recv");
+		}
+		buffer[len] = '\0';
+		if (len != 0)
+		{
+			printf("Receive %d bytes from client\n", len);
+		}
+	}
+	
+	printf("Receive successful.\n");
+
+	// Close file
+	fclose(file);
+
+	// Close current connection
+	close(consocket);
+	return 0;
 }

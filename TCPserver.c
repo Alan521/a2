@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 	pthread_create(&uTid, NULL, UIThread, NULL);
 	printf("displaythreads\n");
 	TransferList* listOfThreads = createTransferList();
-	addTransfer(listOfThreads, 100, "hello.txt", 100, 1);
+	addTransfer(listOfThreads, 100, "hello.txt", "this is data", 100, 1);
 	displayTransferList(listOfThreads);
 	//hands off stdinput to thread
 	int consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);

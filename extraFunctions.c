@@ -30,12 +30,13 @@ TransferList* createTransferList()
 }
 
 //Add transfer to transfer list
-void addTransfer(TransferList* q, int id, char file[], long long int size, long long int chunks){
+void addTransfer(TransferList* q, int id, char file[], char* data, long long int size, long long int chunks){
     TransferNode* node = (TransferNode*)malloc(sizeof(TransferNode));
     node->id = id;
     strcpy(node->filename, file);
     node->fileSize = size;
     node->chunkSize = chunks;
+    node->data = data;
     node->next = NULL;
 
     // critical section
@@ -66,13 +67,14 @@ void removeTransfer(TransferList* q)
         pthread_cond_wait(&q->cond, &q->mutex);
         //fprintf(stderr,"removeTransfer is woken up - someone signalled the condition variable\n");
     }
-    
+    printf("fileOf = \n");
     
     TransferNode* oldHead = q->head;
     q->head = oldHead->next;
     if (q->head == NULL) {
         q->tail = NULL;         // last node removed
     }
+    free(oldHead->data);
     free(oldHead);
       
     //Release lock
@@ -95,7 +97,7 @@ void displayTransferList(TransferList* q){
     //iterate through list and print out active transfers 
     while(toPrint != NULL){
 
-        fprintf(stderr, "%d %s %lld %lld\n", toPrint->id, toPrint->filename, toPrint->fileSize, toPrint->chunkSize);
+        fprintf(stderr, "%d %s %s %lld %lld\n", toPrint->id, toPrint->filename, toPrint->data toPrint->fileSize, toPrint->chunkSize);
         toPrint = toPrint->next;
     }
     pthread_mutex_unlock(&q->mutex);

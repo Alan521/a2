@@ -98,3 +98,22 @@ void removeTransfer(TransferList* q)
 
 
 }
+
+void displayTransferList(TransferList* q){
+    pthread_mutex_lock(&q->mutex);
+    //Wait for a signal telling us that there's something on the list
+    //If we get woken up but the list is still null, we go back to sleep
+    while(q->head == NULL){
+        //fprintf(stderr,"Transfer list is empty and removeTransfer goes to sleep (pthread_cond_wait)\n");
+        pthread_cond_wait(&q->cond, &q->mutex);
+        //fprintf(stderr,"removeTransfer is woken up - someone signalled the condition variable\n");
+    }
+    TransferNode* toPrint = q->head;
+    //iterate through list and print out active transfers 
+    while(toPrint != NULL){
+        fprintf(stderr, "%d %s %lld %lld\n", toPrint->id, toPrint->filename, toPrint->fileSize, toPrint->chunkSize);
+        toPrint = toPrint->next;
+    }
+    pthread_mutex_unlock(&q->mutex);
+    return;
+}

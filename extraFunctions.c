@@ -17,7 +17,7 @@ Haiqing Gong
 #include <signal.h>
 #include <extraFunctions.h>
 
-//Create a transfer list and initilize its mutex  variable
+//Create a transfer list and initilize its mutex and variable
 TransferList* createTransferList()
 {
     TransferList* list = (TransferList*)malloc(sizeof(TransferList));

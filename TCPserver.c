@@ -75,9 +75,6 @@ int main(int argc, char *argv[])
 	pthread_create(&uTid, NULL, UIThread, NULL);
 	listOfThreads = createTransferList();
 	pthread_create(&fTid, NULL, writeToFile , NULL);
-	/*
-	addTransfer(listOfThreads, 100, "hello.txt", "this is data", 100, 1);
-	displayTransferList(listOfThreads);*/
 	//hands off stdinput to thread
 	int consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
 	int numServiced = 1;
@@ -130,11 +127,12 @@ void* UIThread(void* arg){
 void* writeToFile(void* arg){
 	while(1){
 		TransferNode* requestFile = removeTransfer(listOfThreads);
-		printf("%s\n",requestFile->data);
 		FILE *file = fopen(requestFile->filename, "w");
 		fwrite(requestFile->data, 1, strlen(requestFile->data), file);
+		//printf("hello\n");
 		free(requestFile->data);
     	free(requestFile);
+    	fclose(file);
     
 	}
 	return NULL;
@@ -156,12 +154,14 @@ void* recieveConnection(void* arg){
 	buffer[len] = '\0';
 	// Create a file to write
 	// Receive data from client, then write to file.
-	char filename[30];
+	char filename[100];
 	/*sprintf(filename, "data.%d", filesuffix++);
 	FILE *file = fopen(filename, "w");
 	*/
 
-	char* data = (char*)malloc(1);
+	char* data = (char*)malloc(2);
+	
+	data = strcpy(data, "");
 	while (len)
 	{
 		//fwrite(buffer, 1, len, file);
@@ -171,9 +171,19 @@ void* recieveConnection(void* arg){
 		{
 			perror("Error in recv");
 		}
-		data = ( char*)realloc(data, strlen(buffer) + strlen(data) + 2);
+		else if(len == 0){
+			break;
+		}
+		buffer[len] = '\0';
+		printf("lenb = %d\n", (int)strlen(buffer));
+		printf("lend = %d\n", (int)strlen(data));
+		data = ( char*)realloc(data, strlen(buffer) + strlen(data) + 1);
 		data = strcat(data, strpbrk(buffer, "|") + 1);
-		strncpy(filename, buffer, strpbrk(buffer, "|") - buffer);
+		//strncpy(temp, buffer, (unsigned int)(strpbrk(buffer, "|") - buffer));
+		buffer[strlen(buffer) - strlen(strpbrk(buffer, "|") + 1) - 1] = '\0';
+		strcpy(filename, buffer);
+		printf("lenn%d\n",(int)(strlen(filename)) );
+		printf("name = %s\n",filename );
 		
 		if (len != 0)
 		{

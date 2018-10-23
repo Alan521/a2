@@ -31,8 +31,9 @@ TransferList* createTransferList()
 
 //Add transfer to transfer list
 void addTransfer(TransferList* q, int id, char file[], char* data, long long int size, long long int chunks){
-    TransferNode* node = (TransferNode*)malloc(sizeof(TransferNode));
+    TransferNode* node = (TransferNode*)malloc(sizeof(TransferNode) + 1);
     node->id = id;
+    printf("file: %s\n", file );
     strcpy(node->filename, file);
     node->fileSize = size;
     node->chunkSize = chunks;

@@ -12,7 +12,7 @@ Haiqing Gong
 #include <sys/socket.h>
 
 #define MAXRCVLEN 4096
-#define FILENAME "smallTest.txt"
+#define FILENAME "wonderland.txt"
  
 int main(int argc, char *argv[])
 {
@@ -85,26 +85,23 @@ int main(int argc, char *argv[])
 		perror("Error in fopen");
 		exit(EXIT_FAILURE);
 	}
-	len = fread(buffer, 1, bufferlen, file) + strlen(FILENAME) + 1;
+	len = fread(buffer, 1, bufferlen - (strlen(FILENAME) + 5) , file);
 	char output[MAXRCVLEN + 1];
-	
-	
 
 	while (len)
 	{
-		sprintf(output, "%s|%s", "test.txt",buffer);
-		printf("%s\n", output);
+		sprintf(output, "save%s|%s", FILENAME,buffer);
+
 		// send file content
+		len = strlen(output);
 		len = send(mysocket, output, len, 0);
 		if (len == -1)
 		{
 			perror("Error in send");
 		}
 		// continue reading file content
-		len = fread(buffer, 1, bufferlen, file);
-		if(len){
-			len = len  + strlen(FILENAME) + 1;
-		}
+		len = fread(buffer, 1, bufferlen - (strlen(FILENAME) + 5), file);
+		
 	}
 
 	close(mysocket);

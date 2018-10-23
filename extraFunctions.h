@@ -3,7 +3,7 @@
 //Transfer Node
 typedef struct transfer_node {
     int id;
-    char filename[21]; 
+    char filename[31]; 
     char* data;
     long long int fileSize;
     long long int chunkSize;

@@ -1,5 +1,5 @@
 /*********************
-CIS3210 assignment 1
+CIS3210 assignment 2
 Haiqing Gong
 ********************/
 
@@ -17,16 +17,15 @@ Haiqing Gong
 #include <signal.h>
 #include <extraFunctions.h>
 
-//Create a transfer list and initilize its mutex and condition variable
+//Create a transfer list and initilize its mutex and variable
 TransferList* createTransferList()
 {
-    TransferList* q = (TransferList*)malloc(sizeof(TransferList));
-    q->head = q->tail = NULL;
-    pthread_mutex_init(&q->mutex, NULL);
-    
+    TransferList* list = (TransferList*)malloc(sizeof(TransferList));
+    list->head = list->tail = NULL;
+    pthread_mutex_init(&list->mutex, NULL);
     //Initialize the condition variable
-    pthread_cond_init(&q->cond, NULL);
-    return q;
+    pthread_cond_init(&list->cond, NULL);
+    return list;
 }
 
 //Add transfer to transfer list
@@ -35,68 +34,58 @@ void addTransfer(TransferList* q, int id, char file[], char* data, long long int
     node->id = id;
     printf("file: %s\n", file );
     strcpy(node->filename, file);
+	node->data = data;
     node->fileSize = size;
-    node->chunkSize = chunks;
-    node->data = data;
+    node->chunkSize = chunks; 
     node->next = NULL;
-
-    // critical section
-    pthread_mutex_lock(&q->mutex);
-    if (q->tail != NULL) {
-        q->tail->next = node;       // append after tail
-        q->tail = node;
+	
+    pthread_mutex_lock(&list->mutex);
+    if (list->tail != NULL) {
+        list->tail->next = node;      
+        list->tail = node;
     } else {
-        q->tail = q->head = node;   // first node
+        list->tail = list->head = node;   // first node of the list
     }
-    //Signal the consumer thread woiting on this condition variable
-    pthread_cond_signal(&q->cond);
-    pthread_mutex_unlock(&q->mutex);
-    //fprintf(stderr, "Worker %d enqueues the message, signals cond variable, unlocks mutex, and goes to sleep\n", sender);
+    //Signal the consumer thread waiting on condition variable
+    pthread_cond_signal(&list->cond);
+    pthread_mutex_unlock(&list->mutex);
     sleep(3);
 
 }
-//Remove transfer from transfer list
-TransferNode* removeTransfer(TransferList* q)
+//Remove transfers from the transfer list
+TransferNode* removeTransfer(TransferList* list)
 {
-    // critical section
-    pthread_mutex_lock(&q->mutex);
+    pthread_mutex_lock(&list->mutex);
     
-    //Wait for a signal that there's something on the list
-    //If the list is still null, go back to sleep
-    while(q->head == NULL){
-        //fprintf(stderr,"Transfer list is empty and removeTransfer goes to sleep (pthread_cond_wait)\n");
-        pthread_cond_wait(&q->cond, &q->mutex);
-        //fprintf(stderr,"removeTransfer is woken up - someone signalled the condition variable\n");
+    //Wait for a signal if there's something on the list. if list is null, go back to sleep
+    while(list->head == NULL){ 
+        pthread_cond_wait(&list->cond, &list->mutex);
     }
-    TransferNode* oldHead = q->head;
-    q->head = oldHead->next;
-    if (q->head == NULL) {
-        q->tail = NULL;         // last node removed
+    TransferNode* oldHead = list->head;
+    list->head = oldHead->next;
+    if (list->head == NULL) {
+		// remove last node 
+        list->tail = NULL;         
     }
-      
-    //Release lock
-    pthread_mutex_unlock(&q->mutex);
+    pthread_mutex_unlock(&list->mutex);
     return oldHead;
 
 }
 
-void displayTransferList(TransferList* q){
-    pthread_mutex_lock(&q->mutex);
-    //Wait for a signal telling us that there's something on the list
-    //If we get woken up but the list is still null, we go back to sleep
-    while(q->head == NULL){
-
-        //fprintf(stderr,"Transfer list is empty and removeTransfer goes to sleep (pthread_cond_wait)\n");
-        pthread_cond_wait(&q->cond, &q->mutex);
-        //fprintf(stderr,"removeTransfer is woken up - someone signalled the condition variable\n");
+//display the transfer list
+void displayTransferList(TransferList* list){
+    pthread_mutex_lock(&list->mutex);
+    //Wait for a signal if there's something on the list. if list is null, go back to sleep
+    while(list->head == NULL){
+        pthread_cond_wait(&list->cond, &list->mutex);
     }
-    TransferNode* toPrint = q->head;
-    //iterate through list and print out active transfers 
-    while(toPrint != NULL){
+    TransferNode* printOut = list->head;
+    //iterate through the list and print all of active transfers 
+    while(printOut != NULL){
 
-        fprintf(stderr, "%d %s %s %lld %lld\n", toPrint->id, toPrint->filename, toPrint->data, toPrint->fileSize, toPrint->chunkSize);
-        toPrint = toPrint->next;
+        fprintf(stderr, "%d %s %s %lld %lld\n", printOut->id, printOut->filename, printOut->data, printOut->fileSize, printOut->chunkSize);
+        printOut = printOut->next;
     }
-    pthread_mutex_unlock(&q->mutex);
+    pthread_mutex_unlock(&list->mutex);
     return;
 }

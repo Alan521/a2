@@ -97,7 +97,7 @@ void displayTransferList(TransferList* q){
     //iterate through list and print out active transfers 
     while(toPrint != NULL){
 
-        fprintf(stderr, "%d %s %s %lld %lld\n", toPrint->id, toPrint->filename, toPrint->data toPrint->fileSize, toPrint->chunkSize);
+        fprintf(stderr, "%d %s %s %lld %lld\n", toPrint->id, toPrint->filename, toPrint->data, toPrint->fileSize, toPrint->chunkSize);
         toPrint = toPrint->next;
     }
     pthread_mutex_unlock(&q->mutex);

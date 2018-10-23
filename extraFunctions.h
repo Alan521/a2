@@ -4,6 +4,7 @@
 typedef struct transfer_node {
     int id;
     char filename[21]; 
+    char* data;
     long long int fileSize;
     long long int chunkSize;
     struct transfer_node* next;
@@ -22,7 +23,7 @@ typedef struct {
 //Create a transfer list and initilize its mutex and condition variable
 TransferList* createTransferList();
 //Add transfer to transfer list
-void addTransfer(TransferList* q, int id, char file[], long long int size, long long int chunks);
+void addTransfer(TransferList* q, int id, char file[], char* data, long long int size, long long int chunks);
 //Remove transfer from transfer list
 void removeTransfer(TransferList* q);
 

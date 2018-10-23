@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	char buffer[MAXRCVLEN + 1]; /* +1 so we can add null terminator */
+	char buffer[MAXRCVLEN + 1] = "this is a test"; /* +1 so we can add null terminator */
 	int len, mysocket;
 	struct sockaddr_in dest; // socket info about the machine connecting to us
 
@@ -69,9 +69,11 @@ int main(int argc, char *argv[])
 	}
 	dest.sin_port = htons(port);                   // Set destination port number
  	
+ 	printf("connecting to the server\n");
 	// Connect to the server
 	if (connect(mysocket, (struct sockaddr *)&dest, sizeof(struct sockaddr_in)) == -1)
 	{
+		printf("failed to connect\n");
 		perror("Error in connect");
 		exit(EXIT_FAILURE);
 	}
@@ -83,18 +85,26 @@ int main(int argc, char *argv[])
 		perror("Error in fopen");
 		exit(EXIT_FAILURE);
 	}
-	len = fread(buffer, 1, bufferlen, file);
+	len = fread(buffer, 1, bufferlen, file) + strlen(FILENAME) + 1;
+	char output[MAXRCVLEN + 1];
+	
+	
 
 	while (len)
 	{
+		sprintf(output, "%s|%s", "test.txt",buffer);
+		printf("%s\n", output);
 		// send file content
-		len = send(mysocket, buffer, len, 0);
+		len = send(mysocket, output, len, 0);
 		if (len == -1)
 		{
 			perror("Error in send");
 		}
 		// continue reading file content
 		len = fread(buffer, 1, bufferlen, file);
+		if(len){
+			len = len  + strlen(FILENAME) + 1;
+		}
 	}
 
 	close(mysocket);

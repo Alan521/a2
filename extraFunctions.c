@@ -41,12 +41,12 @@ void addTransfer(TransferList* list, int id, char file[], char* data, long long 
 	
     pthread_mutex_lock(&list->mutex);
     if (list->tail != NULL) {
-        list->tail->next = node;       // append after tail
+        list->tail->next = node;      
         list->tail = node;
     } else {
-        list->tail = list->head = node;   // first node
+        list->tail = list->head = node;   // first node of the list
     }
-    //Signal the consumer thread woiting on this condition variable
+    //Signal the consumer thread waiting on condition variable
     pthread_cond_signal(&list->cond);
     pthread_mutex_unlock(&list->mutex);
     sleep(3);

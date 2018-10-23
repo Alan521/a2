@@ -28,6 +28,9 @@ typedef struct
 void* UIThread(void* arg);
 int serverState = 1;
 void* recieveConnection(void* arg);
+void* writeToFile(void* arg);
+
+TransferList* listOfThreads = NULL;
 
 int main(int argc, char *argv[])
 {
@@ -38,7 +41,7 @@ int main(int argc, char *argv[])
 	}
 	int port = atoi(argv[1]);
 	
-	pthread_t uTid;//user interface thread id
+	pthread_t uTid, fTid;//user interface thread id
 	pthread_t * cTid = NULL;//un initialized list of thread ids for client connections
   
 	struct sockaddr_in dest; // socket info about the machine connecting to us
@@ -70,7 +73,8 @@ int main(int argc, char *argv[])
 	
 	// Create a socket to communicate with the client that just connected
 	pthread_create(&uTid, NULL, UIThread, NULL);
-	TransferList* listOfThreads = createTransferList();
+	listOfThreads = createTransferList();
+	pthread_create(&fTid, NULL, writeToFile , NULL);
 	/*
 	addTransfer(listOfThreads, 100, "hello.txt", "this is data", 100, 1);
 	displayTransferList(listOfThreads);*/
@@ -83,7 +87,7 @@ int main(int argc, char *argv[])
 	{
 		//checks if it has stopped all connections
 		if(serverState != 2){
-			printf("Incoming connection from %s \n", inet_ntoa(dest.sin_addr));	
+			printf("Incoming connection from %s\n", inet_ntoa(dest.sin_addr));	
 			cTid = (pthread_t*)realloc(cTid, sizeof(pthread_t)*(numServiced + 1));
 			tArgs = (threadArgs*)realloc(tArgs, sizeof(threadArgs)*(numServiced + 1));
 			tArgs[numServiced - 1].consocket = consocket;
@@ -103,7 +107,7 @@ int main(int argc, char *argv[])
 
 void* UIThread(void* arg){
 	char state = '0';
-	system("/bin/stty raw");
+	//system("/bin/stty raw");
 	while(serverState){
 		state = getchar();
 		if(state == 'o'){
@@ -118,17 +122,31 @@ void* UIThread(void* arg){
 			serverState = 1;
 		}	
 	}
-	system ("/bin/stty cooked");
+	//system ("/bin/stty cooked");
 	kill(getpid(), SIGTERM);
 	return NULL;
 }
+
+void* writeToFile(void* arg){
+	while(1){
+		TransferNode* requestFile = removeTransfer(listOfThreads);
+		printf("%s\n",requestFile->data);
+		FILE *file = fopen(requestFile->filename, "w");
+		fwrite(requestFile->data, 1, strlen(requestFile->data), file);
+		free(requestFile->data);
+    	free(requestFile);
+    
+	}
+	return NULL;
+}
+
 
 void* recieveConnection(void* arg){
 	threadArgs* args = (threadArgs*)arg;
 	int consocket =  args->consocket;
 	int len = 0;
 	char buffer[MAXRCVLEN + 1]; // +1 so we can add null terminator
-	int filesuffix = 0;
+	//int filesuffix = 0;
 	// Receive data from the client
 	len = recv(consocket, buffer, MAXRCVLEN, 0);
 	if (len == -1)
@@ -136,14 +154,14 @@ void* recieveConnection(void* arg){
 		perror("Error in recv");
 	}
 	buffer[len] = '\0';
-	printf("Receive %d bytes from client\n", len);
-	printf("string length = %d\n", (int)strlen(buffer));
 	// Create a file to write
 	// Receive data from client, then write to file.
 	char filename[30];
 	/*sprintf(filename, "data.%d", filesuffix++);
 	FILE *file = fopen(filename, "w");
 	*/
+
+	char* data = (char*)malloc(1);
 	while (len)
 	{
 		//fwrite(buffer, 1, len, file);
@@ -153,18 +171,18 @@ void* recieveConnection(void* arg){
 		{
 			perror("Error in recv");
 		}
-		char* data = (char*)malloc((strlen(buffer) + 1) * sizeof(char));
-		strcpy(data, strpbrk(buffer, "|") + 1);
+		data = ( char*)realloc(data, strlen(buffer) + strlen(data) + 2);
+		data = strcat(data, strpbrk(buffer, "|") + 1);
 		strncpy(filename, buffer, strpbrk(buffer, "|") - buffer);
-		printf("%s\n", filename);
-		printf("%s\n", data);
 		
-		data[len] = '\0';
 		if (len != 0)
 		{
 			printf("Receive %d bytes from client\n", len);
 		}
 	}
+
+//	printf("%s\n", data);
+	addTransfer(listOfThreads, 10, filename, data, len, 10 );
 	
 	printf("Receive successful.\n");
 

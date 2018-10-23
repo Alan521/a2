@@ -55,7 +55,7 @@ void addTransfer(TransferList* q, int id, char file[], char* data, long long int
 
 }
 //Remove transfer from transfer list
-void removeTransfer(TransferList* q)
+TransferNode* removeTransfer(TransferList* q)
 {
     // critical section
     pthread_mutex_lock(&q->mutex);
@@ -67,19 +67,15 @@ void removeTransfer(TransferList* q)
         pthread_cond_wait(&q->cond, &q->mutex);
         //fprintf(stderr,"removeTransfer is woken up - someone signalled the condition variable\n");
     }
-    printf("fileOf = \n");
-    
     TransferNode* oldHead = q->head;
     q->head = oldHead->next;
     if (q->head == NULL) {
         q->tail = NULL;         // last node removed
     }
-    free(oldHead->data);
-    free(oldHead);
       
     //Release lock
     pthread_mutex_unlock(&q->mutex);
-
+    return oldHead;
 
 }
 

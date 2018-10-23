@@ -25,7 +25,7 @@ TransferList* createTransferList();
 //Add transfer to transfer list
 void addTransfer(TransferList* q, int id, char file[], char* data, long long int size, long long int chunks);
 //Remove transfer from transfer list
-void removeTransfer(TransferList* q);
+TransferNode* removeTransfer(TransferList* q);
 
 void displayTransferList(TransferList* q);
 

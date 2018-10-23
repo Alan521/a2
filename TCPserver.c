@@ -175,15 +175,10 @@ void* recieveConnection(void* arg){
 			break;
 		}
 		buffer[len] = '\0';
-		printf("lenb = %d\n", (int)strlen(buffer));
-		printf("lend = %d\n", (int)strlen(data));
 		data = ( char*)realloc(data, strlen(buffer) + strlen(data) + 1);
 		data = strcat(data, strpbrk(buffer, "|") + 1);
-		//strncpy(temp, buffer, (unsigned int)(strpbrk(buffer, "|") - buffer));
 		buffer[strlen(buffer) - strlen(strpbrk(buffer, "|") + 1) - 1] = '\0';
 		strcpy(filename, buffer);
-		printf("lenn%d\n",(int)(strlen(filename)) );
-		printf("name = %s\n",filename );
 		
 		if (len != 0)
 		{

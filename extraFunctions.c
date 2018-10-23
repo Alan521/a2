@@ -15,25 +15,7 @@ Haiqing Gong
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
-
-//Transfer Node
-typedef struct transfer_node {
-    int id;
-    char filename[21]; 
-    long long int fileSize;
-    long long int chunkSize;
-    struct transfer_node* next;
-} TransferNode;
-//Transfer list - a singly linked list
-//Remove from head, add to tail
-typedef struct {
-    TransferNode* head;
-    TransferNode* tail;
-    pthread_mutex_t mutex;
-    
-    //Add a condition variable
-    pthread_cond_t cond;
-} TransferList;
+#include <extraFunctions.h>
 
 //Create a transfer list and initilize its mutex and condition variable
 TransferList* createTransferList()
@@ -104,6 +86,7 @@ void displayTransferList(TransferList* q){
     //Wait for a signal telling us that there's something on the list
     //If we get woken up but the list is still null, we go back to sleep
     while(q->head == NULL){
+
         //fprintf(stderr,"Transfer list is empty and removeTransfer goes to sleep (pthread_cond_wait)\n");
         pthread_cond_wait(&q->cond, &q->mutex);
         //fprintf(stderr,"removeTransfer is woken up - someone signalled the condition variable\n");
@@ -111,6 +94,7 @@ void displayTransferList(TransferList* q){
     TransferNode* toPrint = q->head;
     //iterate through list and print out active transfers 
     while(toPrint != NULL){
+
         fprintf(stderr, "%d %s %lld %lld\n", toPrint->id, toPrint->filename, toPrint->fileSize, toPrint->chunkSize);
         toPrint = toPrint->next;
     }

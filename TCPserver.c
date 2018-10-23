@@ -15,6 +15,7 @@ Haiqing Gong
 #include <unistd.h>
 #include <pthread.h>
 #include <signal.h>
+#include <extraFunctions.h>
  
 #define MAXRCVLEN 4096
 
@@ -69,10 +70,15 @@ int main(int argc, char *argv[])
 	
 	// Create a socket to communicate with the client that just connected
 	pthread_create(&uTid, NULL, UIThread, NULL);
+	printf("displaythreads\n");
+	TransferList* listOfThreads = createTransferList();
+	addTransfer(listOfThreads, 100, "hello.txt", 100, 1);
+	displayTransferList(listOfThreads);
 	//hands off stdinput to thread
 	int consocket = accept(mysocket, (struct sockaddr *)&dest, &socksize);
 	int numServiced = 1;
 	threadArgs* tArgs = NULL;
+
 	while (serverState)
 	{
 		//checks if it has stopped all connections
